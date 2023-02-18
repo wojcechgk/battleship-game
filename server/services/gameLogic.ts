@@ -8,34 +8,34 @@
 // All moves in turns has to be saved
 
 
-const shipTypes = [
+const SHIP_TYPES = [
   { 
     type: 'shipType1',
     count: 5,
-    areas: 1
+    fieldLength: 1
   },
   {
     type: 'shipType2',
     count: 4,
-    areas: 2
+    fieldLength: 2
   },
   {
     type: 'shipType3',
     count: 3,
-    areas: 3
+    fieldLength: 3
   },
   { type: 'shipType4',
     count: 2,
-    areas: 4
+    fieldLength: 4
   },
   {
     type: 'shipType5',
     count: 1,
-    areas: 5
+    fieldLength: 5
   },
 ]
 
-class Player {
+export class Player {
   name: string
   playerBoard: PlayerBoard
   constructor(name: string) {
@@ -50,39 +50,54 @@ class PlayerBoard {
   addShip(ship: TShipOnBoard) {
    if(!this._isShipValid(ship)) return
     this.board.push(ship)
+    const availableShipIndex = this._availableShips.findIndex(as => as.type === ship.type)
+    this._availableShips[availableShipIndex].count--
+  }
+  getAvailableShips() {
+    return this._availableShips
   }
 
-  private _availableShips = shipTypes
+  private _availableShips: TShipType[] = SHIP_TYPES
 
   private _isShipValid(ship: TShipOnBoard) {
     const shipType = this._availableShips.find(as => as.type === ship.type)
-    if(!shipType) {
+    if(!shipType || shipType.count === 0) {
       this._invokeError(`Ship ${ship.type} not available`)
       return false
     }
-    if(!(ship.from[0] === ship.to[0] || ship.from[1] === ship.to[1])) {
-      this._invokeError(`Ship coords are not straights`)
+    if(!this._isVerticalOrHorizontal(ship)) {
+      this._invokeError(`Ship alignment is not vertical or horizontal`)
       return false
     }
-    if(this._countLength(ship.from, ship.to) === shipType.areas) {
+    if(ship.fields?.length !== shipType.fieldLength) {
       this._invokeError(`Incorrect ship length`)
       return false
     }
-    if(this._isPlaceTaken(ship.from, ship.to) === shipType.areas) {
+    if(this._isPlaceTaken(ship)) {
       this._invokeError(`Ship can not be placed on taken field`)
       return false
     }
     return true
   }
-  private _countLength(from: TCoords, to: TCoords) {
-    const x = to[0] - from[0] 
-    const y = to[1] - from[1]
-    return x ? y : x 
+  private _isPlaceTaken(ship: TShipOnBoard) {
+    return ship.fields.some(field => this._getTakenFields().includes(field))
   }
-  private _isPlaceTaken(from: TCoords, to: TCoords) {
-    const x = to[0] - from[0]
-    const y = to[1] - from[1]
-    return x ? y : x 
+  private _isVerticalOrHorizontal(ship: TShipOnBoard) {
+    const x = ship.fields[0][0]
+    const y = ship.fields[0][1]
+    for (let i = 1; i < ship.fields.length; i++) {
+      if(!(x === ship.fields[i][0] || y === ship.fields[i][1])) {
+        return false
+      }
+    }
+    return true
+  }
+  private _getTakenFields() {
+    const fields: TField[] = []
+    this.board.forEach(s => {
+      fields.push(...s.fields)
+    })
+    return fields
   }
   private _invokeError(message: string) {
     console.log(`Error: ${message}`)
@@ -95,14 +110,13 @@ const turns:[TPlayerTurn, TPlayerTurn][] = []
 // TYPES
 
 type TPlayerTurn = {
-  shotCords: TCoords,
+  shotCords: TField,
   hit: false,
   sink: false,
 }
-// TODO: rename to TField
-type TCoords = [number, number]
 
-// TODO: from and to has to be changed to list of fields to simplify validation
-type TShipOnBoard = { type: string; from: TCoords; to: TCoords }
+type TField = [number, number]
 
-type TShip = { type: string; count: number; areas: number }
+type TShipOnBoard = { type: string; fields: TField[] }
+
+type TShipType = { type: string; count: number; fieldLength: number }
