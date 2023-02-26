@@ -35,12 +35,18 @@ const SHIP_TYPES = [
   },
 ]
 
+const invokeError = (message: string) => {
+  console.log(`Error: ${message}`)
+}
+
 export class Player {
   name: string
-  playerBoard: PlayerBoard
+  board = new PlayerBoard()
   constructor(name: string) {
     this.name = name
-    this.playerBoard = new PlayerBoard()
+  }
+  handleShot(field: TField) {
+    // logic here
   }
 }
 
@@ -56,25 +62,27 @@ class PlayerBoard {
   getAvailableShips() {
     return this._availableShips
   }
-
+  isBoardReady() {
+    return !this._availableShips.some(shipType => shipType.count)
+  }
   private _availableShips: TShipType[] = SHIP_TYPES
 
   private _isShipValid(ship: TShipOnBoard) {
     const shipType = this._availableShips.find(as => as.type === ship.type)
     if(!shipType || shipType.count === 0) {
-      this._invokeError(`Ship ${ship.type} not available`)
+      invokeError(`Ship ${ship.type} not available`)
       return false
     }
     if(!this._isVerticalOrHorizontal(ship)) {
-      this._invokeError(`Ship alignment is not vertical or horizontal`)
+      invokeError(`Ship alignment is not vertical or horizontal`)
       return false
     }
     if(ship.fields?.length !== shipType.fieldLength) {
-      this._invokeError(`Incorrect ship length`)
+      invokeError(`Incorrect ship length`)
       return false
     }
     if(this._isPlaceTaken(ship)) {
-      this._invokeError(`Ship can not be placed on taken field`)
+      invokeError(`Ship can not be placed on taken field`)
       return false
     }
     return true
@@ -99,15 +107,21 @@ class PlayerBoard {
     })
     return fields
   }
-  private _invokeError(message: string) {
-    console.log(`Error: ${message}`)
+}
+
+export class Game {
+  private _state: TState = 'WAITING'
+
+  turns:[TPlayerTurn, TPlayerTurn][] = [] // maybe useless
+  
+  private _broadcastState() {
+    console.log(this._state)
   }
 }
 
-// TURNS
-const turns:[TPlayerTurn, TPlayerTurn][] = []
-
 // TYPES
+
+type TState = 'WAITING' | 'IN_PROGRESS'
 
 type TPlayerTurn = {
   shotCords: TField,
