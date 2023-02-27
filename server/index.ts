@@ -2,6 +2,7 @@ import express from 'express'
 import ws from 'ws'
 import dotenv from 'dotenv'
 import { Game, Player } from './services/gameLogic'
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 const app = express();
@@ -15,16 +16,31 @@ server.on('upgrade', (request, socket, head) => {
   });
 });
 
-// Connection and 
+let game: Game
+const players: Player[] = []
+
+// Connection and player handling
 wsServer.on('connection', socket => {
+  handlePlayerConnection(socket)
+  socket.on('message', message => {
+    handlePlayerAction(message)
+  })
+})
 
-  socket.on('message', message => handlePlayerAction(message))
-});
-
-const player1 = new Player('John')
-const player2 = new Player('Tom')
-const game = new Game()
-
+const handlePlayerConnection = (socket: ws.WebSocket) => {
+  if(players.length > 2) {
+    socket.close(403, '2 players already')
+    return
+  }
+  const playerId = randomUUID()
+  const player = new Player(playerId)
+  players.push(player)
+  if(!game) {
+    game = new Game()
+  }
+  socket.send(playerId)
+  // send game state
+}
 
 const handlePlayerAction = (message: ws.RawData) => {
   // Turn raw data message to object
@@ -32,8 +48,6 @@ const handlePlayerAction = (message: ws.RawData) => {
   // Invoke proper action
   console.log(message)
 }
-// Player action methods
-
 
 // // game play
 // player1.board.addShip({ type: 'shipType1', fields: [[0, 1]] })
