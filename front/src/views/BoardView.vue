@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 
 const boardSize = [10, 10]
-const takenFields = []
-const availableShips = [
+const availableShips = ref([
   { 
     type: 'shipType1',
     count: 5,
@@ -28,13 +27,13 @@ const availableShips = [
     count: 1,
     fieldLength: 5
   },
-]
-
+])
 const mouseOverField = ref([0,0])
 const activeShip = ref()
 const showShadowShip = ref(false)
 const canPlaceShip = ref(false)
 const isVertical = ref(true)
+const takenFields = ref<number[][]>([])
 const shadowFields = computed(() => {
   if(!showShadowShip.value || !activeShip.value?.fieldLength) return []
   const fields:number[][] = []
@@ -44,29 +43,44 @@ const shadowFields = computed(() => {
     }
   return fields
 })
-const shadowFieldsX = computed(() => shadowFields.value?.map(sf => sf[0]))
-const shadowFieldsY = computed(() => shadowFields.value?.map(sf => sf[1]))
 
 const handleMouseOverBoardField = (x: number, y: number) => {
   if (!activeShip.value) return
   showShadowShip.value = true
   mouseOverField.value[0] = x
   mouseOverField.value[1] = y
-  canPlaceShip.value = 11 - (isVertical.value ? y : x ) >= activeShip.value.fieldLength
+  canPlaceShip.value = (11 - (isVertical.value ? y : x ) >= activeShip.value.fieldLength) 
+  && !shadowFields.value?.some(sf => findArrayinArrays(takenFields.value, sf))
 }
 const handleMouseLeave = () => {
   showShadowShip.value = false
 }
 const handleFieldClick = () => {
   if(!canPlaceShip.value) return
-  const activeShipIndex = availableShips.findIndex(ship => ship.type === activeShip.value?.type)
-  if(availableShips[activeShipIndex]?.count === 0 || undefined) return
-  availableShips[activeShipIndex].count--
-  if(!availableShips[activeShipIndex].count) {
+  const activeShipIndex = availableShips.value.findIndex(ship => ship.type === activeShip.value?.type)
+  if(!availableShips.value[activeShipIndex] || availableShips.value[activeShipIndex]?.count === 0) return
+  console.log(shadowFields.value)
+  takenFields.value.push(...shadowFields.value)
+  availableShips.value[activeShipIndex].count--
+  if(!availableShips.value[activeShipIndex].count) {
     activeShip.value = undefined
   }
-  takenFields.push(...shadowFields.value)
 }
+const findArrayinArrays = (arrs: any[][], arr: any[]) => {
+  const arrays = JSON.stringify(arrs)
+  const array = JSON.stringify(arr)
+  return arrays.indexOf(array) !== -1
+}
+const canSubmitBoard = computed(() => !availableShips.value.some(ship => !!ship.count))
+const submitBoard = () => {
+  console.log('Submit')
+}
+
+const handleAvailableShipClick = (ship: {type: string, count: number, fieldLength: number}) => {
+  if(!ship.count) return
+  activeShip.value = (activeShip.value?.type === ship.type ? undefined : ship)
+}
+
 </script>
 
 <template>
@@ -85,7 +99,10 @@ const handleFieldClick = () => {
         v-for="field in boardSize[1]"
         :key="field"
         class="field"
-        :class="{shadow: shadowFieldsX.includes(field) && shadowFieldsY.includes(row)}"
+        :class="[
+          {shadow: findArrayinArrays(shadowFields, [field, row])},
+          {taken: findArrayinArrays(takenFields, [field, row])}
+        ]"
         @mouseover="handleMouseOverBoardField(field, row)"
         @click="handleFieldClick()"
         >
@@ -97,7 +114,7 @@ const handleFieldClick = () => {
       <div v-for="ship in availableShips" :key="ship.type">
         <p>{{ ship.count }}</p>
         <div
-          @click="activeShip = (activeShip?.type === ship.type ? undefined : ship)"
+          @click="handleAvailableShipClick(ship)"
           class="availableShip"
           :class="[{ active: activeShip?.type === ship.type }, { disable: !ship.count }]"
           >
@@ -110,15 +127,7 @@ const handleFieldClick = () => {
         </div>
       </div>
     </div>
-    <div style="display:none;">
-      mouseOverField: {{mouseOverField}}<br>
-      activeShip: {{activeShip}}<br>
-      showShadowShip: {{showShadowShip}}<br>
-      canPlaceShip: {{canPlaceShip}}<br>
-      isVertical: {{isVertical}}<br>
-      shadowFields: {{ shadowFields }}<br>
-      shadowFieldsX: {{ shadowFieldsX }}<br>
-    </div>
+    <button :disabled="!canSubmitBoard" @click="submitBoard()">Play</button>
   </div>
 </template>
 
@@ -145,9 +154,14 @@ const handleFieldClick = () => {
 }
 .canPlace .field.shadow {
   background-color: rgb(91, 144, 145);
+  cursor: pointer;
+}
+.field.taken {
+  background-color:  rgb(0, 104, 183);
 }
 .field.shadow {
   background-color: rgb(174, 96, 96);
+  cursor: not-allowed;
 }
 .availableShips {
   display: flex;
@@ -162,8 +176,9 @@ const handleFieldClick = () => {
 }
 .availableShip.disable {
   opacity: 0.2;
+  cursor: not-allowed;
 }
 .active > .field {
-  background-color:  rgb(11, 62, 97);;
+  background-color:  rgb(0, 104, 183);
 }
 </style>
