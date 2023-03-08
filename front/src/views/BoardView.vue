@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-
+const emit = defineEmits<{( e: 'submitBoard', takenFields: number[][]): void }>()
 const boardSize = [10, 10]
 const availableShips = ref([
   { 
@@ -73,7 +73,8 @@ const findArrayinArrays = (arrs: any[][], arr: any[]) => {
 }
 const canSubmitBoard = computed(() => !availableShips.value.some(ship => !!ship.count))
 const submitBoard = () => {
-  console.log('Submit')
+  if(!canSubmitBoard.value) return
+  emit('submitBoard', takenFields.value)
 }
 
 const handleAvailableShipClick = (ship: {type: string, count: number, fieldLength: number}) => {
@@ -110,7 +111,8 @@ const handleAvailableShipClick = (ship: {type: string, count: number, fieldLengt
       </div>
       <button @click="isVertical = !isVertical">{{ isVertical ? '|' : '-' }}</button>
     </div>
-    <div class="availableShips">
+    <button v-if="canSubmitBoard" @click="submitBoard()">Play</button>
+    <div v-else class="availableShips">
       <div v-for="ship in availableShips" :key="ship.type">
         <p>{{ ship.count }}</p>
         <div
@@ -127,7 +129,6 @@ const handleAvailableShipClick = (ship: {type: string, count: number, fieldLengt
         </div>
       </div>
     </div>
-    <button :disabled="!canSubmitBoard" @click="submitBoard()">Play</button>
   </div>
 </template>
 
