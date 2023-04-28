@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { findArrayinArrays } from '@/helpers'
+import PlayerBoard from '@/components/PlayerBoard.vue';
 const emit = defineEmits<{( e: 'submitBoard', takenFields: number[][]): void }>()
-const boardSize = [10, 10]
 const availableShips = ref([
   { 
     type: 'shipType1',
@@ -44,8 +45,10 @@ const shadowFields = computed(() => {
   return fields
 })
 
-const handleMouseOverBoardField = (x: number, y: number) => {
+const handleMouseOverBoardField = (field: [number, number]) => {
   if (!activeShip.value) return
+  const x = field[0]
+  const y = field[1]
   showShadowShip.value = true
   mouseOverField.value[0] = x
   mouseOverField.value[1] = y
@@ -66,11 +69,7 @@ const handleFieldClick = () => {
     activeShip.value = undefined
   }
 }
-const findArrayinArrays = (arrs: any[][], arr: any[]) => {
-  const arrays = JSON.stringify(arrs)
-  const array = JSON.stringify(arr)
-  return arrays.indexOf(array) !== -1
-}
+
 const canSubmitBoard = computed(() => !availableShips.value.some(ship => !!ship.count))
 const submitBoard = () => {
   if(!canSubmitBoard.value) return
@@ -86,31 +85,15 @@ const handleAvailableShipClick = (ship: {type: string, count: number, fieldLengt
 
 <template>
   <div class="page">
-    <div
-      class="board"
+    <PlayerBoard
       :class="{canPlace: canPlaceShip}"
       @mouseleave="handleMouseLeave()"
-      >
-      <div
-      v-for="row in boardSize[0]"
-      :key="row"
-      class="board__row"
-      >
-        <div
-        v-for="field in boardSize[1]"
-        :key="field"
-        class="field"
-        :class="[
-          {shadow: findArrayinArrays(shadowFields, [field, row])},
-          {taken: findArrayinArrays(takenFields, [field, row])}
-        ]"
-        @mouseover="handleMouseOverBoardField(field, row)"
-        @click="handleFieldClick()"
-        >
-        </div>
-      </div>
-      <button @click="isVertical = !isVertical">{{ isVertical ? '|' : '-' }}</button>
-    </div>
+      @mouseOverBoardField="handleMouseOverBoardField"
+      @fieldClick="handleFieldClick()"
+      :shadowFields="shadowFields"
+      :disabledFields="takenFields"
+    />
+    <button @click="isVertical = !isVertical">{{ isVertical ? '|' : '-' }}</button>
     <button v-if="canSubmitBoard" @click="submitBoard()">Play</button>
     <div v-else class="availableShips">
       <div v-for="ship in availableShips" :key="ship.type">
@@ -123,7 +106,7 @@ const handleAvailableShipClick = (ship: {type: string, count: number, fieldLengt
           <div
             v-for="field in ship.fieldLength"
             :key="field"
-            class="field"
+            class="shipField"
           >
           </div>
         </div>
@@ -137,32 +120,6 @@ const handleAvailableShipClick = (ship: {type: string, count: number, fieldLengt
   display: flex;
   flex-direction: row;
   gap: 3rem;
-}
-.board {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.board__row {
-  display: flex;
-  flex-direction: row;
-  gap: 3px;
-}
-.field {
-  width: 40px;
-  height: 40px;
-  background-color: rgb(147, 164, 176);
-}
-.canPlace .field.shadow {
-  background-color: rgb(91, 144, 145);
-  cursor: pointer;
-}
-.field.taken {
-  background-color:  rgb(0, 104, 183);
-}
-.field.shadow {
-  background-color: rgb(174, 96, 96);
-  cursor: not-allowed;
 }
 .availableShips {
   display: flex;
@@ -179,7 +136,12 @@ const handleAvailableShipClick = (ship: {type: string, count: number, fieldLengt
   opacity: 0.2;
   cursor: not-allowed;
 }
-.active > .field {
+.shipField {
+  width: 40px;
+  height: 40px;
+  background-color: rgb(147, 164, 176);
+}
+.active > .shipField {
   background-color:  rgb(0, 104, 183);
 }
 </style>
