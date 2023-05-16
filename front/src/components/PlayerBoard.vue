@@ -20,9 +20,9 @@ const props = withDefaults(
   <div class="board">
     <div v-for="row in props.boardSize[0]" :key="row" class="board__row">
       <div v-for="col in props.boardSize[1]" :key="row + col" class="field" :class="[
-          { shadow: findArrayinArrays(props.shadowFields, [col, row]) },
-          { disabled: findArrayinArrays(props.disabledFields, [col, row]) }
-        ]" @mouseover="emit('mouseOverBoardField', [col, row])" @click="emit('fieldClick', [col, row])">
+        { shadow: findArrayinArrays(props.shadowFields, [col, row]) },
+        { disabled: findArrayinArrays(props.disabledFields, [col, row]) }
+      ]" @mouseover="emit('mouseOverBoardField', [col, row])" @click="emit('fieldClick', [col, row])">
       </div>
     </div>
   </div>

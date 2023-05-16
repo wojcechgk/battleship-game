@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import PlayerBoard from '@/components/PlayerBoard.vue';
-const props = withDefaults(
-  defineProps<{
-    playerBoard?: number[][]
-  }>(),
-  {
-    playerBoard: () => []
-  })
+import { useBoard } from '@/composables/useBoard';
+import { ref } from 'vue';
+
+const { takenFields } = useBoard()
+const mouseOverField = ref<[number, number]>()
 </script>
 <template>
   <div class="gameView">
     <div class="playerScreen">
-      <PlayerBoard :disabledFields="props.playerBoard"/>
-      Player 1
+      <PlayerBoard :disabledFields="takenFields" />
+      You
     </div>
     <div class="playerScreen">
-      <PlayerBoard class="canPlace" />
+      <PlayerBoard class="canPlace" @mouseOverBoardField="e => mouseOverField = e" />
       Player 2
     </div>
   </div>
@@ -26,6 +24,7 @@ const props = withDefaults(
   flex-direction: row;
   gap: 3rem;
 }
+
 .playerScreen {
   display: flex;
   flex-direction: column;
